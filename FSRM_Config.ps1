@@ -4,7 +4,6 @@
 #Get System info
 $majorVer = [System.Environment]::OSVersion.Version.Major
 $minorVer = [System.Environment]::OSVersion.Version.Minor
-$hostname = Get-Content env:computername
 $date = Get-Date -Format dd-MM-yyyy
 
 $cred = Get-Credential -Message "Enter the credentials that should be used to update Ransomware File Groups weekly."
@@ -12,7 +11,7 @@ $smtp_server = Read-Host "Enter the address of the smtp server you wish to use"
 $admin_email = Read-Host "Enter the e-mail address you wish to receive notications at"
 $from_email = Read-Host "Enter the e-mail address that messages should appear to originate from"
 
-$FSRM_Log_Path = Read-Host "Enter the path you wish to store FSRM reports & logs in"
+$FSRM_Log_Path = Read-Host "Enter the path you wish to store FSRM logs, reports, and scripts in (This will not overwrite your current settings if you allready have FSRM installed!)"
 
 Write-Output "Checking if FSRM is installed...`r`n"
 #Check if FSRM is allready installed
@@ -37,6 +36,8 @@ if ($Check_FSRM -ne "True") {
             Write-Output "Unsupported Windows version detected. Quitting..."
             return
     }
+} else {
+    Write-Output "FSRM allready installed...continuing..."
 }
 
 #Create honeypot folders & files
@@ -66,18 +67,20 @@ foreach ($Folder in $SMBShares) {
 
 Write-Output "Configuring FSRM Global Settings"
 #Set FSRM Global Settings   
+if ($Check_FSRM -ne "True") {
+    $ScriptPath = "$FSRM_Log_Path\Scripts"
+    $LogPath = "$FSRM_Log_Path\Logs"
+    $TemplatePath = "$FSRM_Log_Path\Templates"
+    $IncidentPath = "$FSRM_Log_Path\Reports\Incidents"
+    $ScheduledPath = "$FSRM_Log_Path\Reports\Scheduled"
+    $InteractivePath = "$FSRM_Log_Path\Reports\Interactive"
+    New-Item -ItemType Directory -Path $ScriptPath , $LogPath , $TemplatePath , $IncidentPath , $ScheduledPath , $InteractivePath 
 
-$ScriptPath = "$FSRM_Log_Path\Scripts"
-$LogPath = "$FSRM_Log_Path\Logs"
-$TemplatePath = "$FSRM_Log_Path\Templates"
-$IncidentPath = "$FSRM_Log_Path\Reports\Incidents"
-$ScheduledPath = "$FSRM_Log_Path\Reports\Scheduled"
-$InteractivePath = "$FSRM_Log_Path\Reports\Interactive"
-New-Item -ItemType Directory -Path $ScriptPath , $LogPath , $TemplatePath , $IncidentPath , $ScheduledPath , $InteractivePath 
+    Set-FSRMSetting -SmtpServer $smtp_server -AdminEmailAddress $admin_email -FromEmailAddress $from_email 
+    Set-FSRMSetting -ReportLocationIncident $IncidentPath -ReportLocationScheduled $ScheduledPath -ReportLocationOnDemand $InteractivePath
+    Set-FSRMSetting -EmailNotificationLimit 10 -EventNotificationLimit 1 
+}
 
-Set-FSRMSetting -SmtpServer $smtp_server -AdminEmailAddress $admin_email -FromEmailAddress $from_email 
-Set-FSRMSetting -ReportLocationIncident $IncidentPath -ReportLocationScheduled $ScheduledPath -ReportLocationOnDemand $InteractivePath
-Set-FSRMSetting -EmailNotificationLimit 10 -EventNotificationLimit 1 
 
 #Create honeypot FSRM Group
 Write-Output "Creating FSRM File Groups"
