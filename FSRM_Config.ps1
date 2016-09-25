@@ -6,7 +6,7 @@ $hostname = Get-Content env:computername
 $date = Get-Date -Format dd-MM-yyyy
 
 $smtp_server = Read-Host "Enter the address of the smtp server you wish to use: "
-$admin_email = Read-Host "Enter the e-mail address you wish to receive notications at:"
+$admin_email = Read-Host "Enter the e-mail address you wish to receive notications at: "
 $from_email = Read-Host "Enter the e-mail address that messages should appear to originate from: "
 
 #Check if FSRM is allready installed
@@ -74,9 +74,9 @@ Set-FSRMSetting -EmailNotificationLimit 10 -EventNotificationLimit 1
 New-FSRMFileGroup -Name "Honeypot Files" -IncludePattern "*.*"
 
 #Create initial FSRM Cryptolocker Detection Group
-$FilePatterns = ((Invoke-WebRequest -Uri "https://fsrm.experiant.ca/api/v1/combined").content | ConvertFrom-Json | ForEach-Object {$_.filters}) | Out-File -FilePath $LogPath\Ransomware_File_Groups__$date.txt 
+$FilePatterns = ((Invoke-WebRequest -Uri "https://fsrm.experiant.ca/api/v1/combined").content | ConvertFrom-Json | ForEach-Object {$_.filters}) 
 New-FSRMFileGroup -Name "Ransomware File Groups" -IncludePattern $FilePatterns
-
+$FilePatterns | Out-File -FilePath $LogPath\Ransomware_File_Groups__$date.txt
 #Create FSRM Notification Actions
 $DetectionSubject = "Possible Ransomware Infection Detected! "
 $DetectionMessage = "User [Source Io Owner] attempted to save [Source File Path] to [File Screen Path] on server [Server].
