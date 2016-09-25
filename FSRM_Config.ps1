@@ -5,9 +5,9 @@ $minorVer = [System.Environment]::OSVersion.Version.Minor
 $hostname = Get-Content env:computername
 $date = Get-Date -Format dd-MM-yyyy
 
-$smtp_server = Read-Host "Enter the address of the smtp server you wish to use: "
-$admin_email = Read-Host "Enter the e-mail address you wish to receive notications at: "
-$from_email = Read-Host "Enter the e-mail address that messages should appear to originate from: "
+$smtp_server = Read-Host "Enter the address of the smtp server you wish to use"
+$admin_email = Read-Host "Enter the e-mail address you wish to receive notications at"
+$from_email = Read-Host "Enter the e-mail address that messages should appear to originate from"
 
 #Check if FSRM is allready installed
 $Check_FSRM = Get-WindowsFeature -Name FS-Resource-Manager
