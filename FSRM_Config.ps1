@@ -36,7 +36,6 @@ $SMBShares = Get-SmbShare -Special $false
 $NumFolders = $SMBShares.Count
 $honeypots = @()
 Write-Output "There are $NumFolders shared from this server."
-Write-Verbose $SMBShares.Name
 do {
     $MaxHoneypotSize = Read-Host "How large should each honeypot folder be? (i.e 10MB , 500MB , or 1GB -- Remember, the larger the files the longer it will take for them to be encrypted!)"
 } while ( $MaxHoneypotSize -notmatch "\d*KB|\d*MB|\d*GB" )
