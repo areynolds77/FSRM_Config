@@ -131,7 +131,7 @@ if (`$Compare -eq `$null) {
 } else {
     `$body = `$Compare | Out-String
 }
-`$Compare| Out-File -filepath `$FSRM_Log_Path\Ransomware_File_Groups_`$date.txt
+`$Compare| Out-File -filepath `$FSRM_Log_Path\Ransomware_File_Groups_Updated_`$date.txt
 
 `Send-MailMessage -Body `$Body -From `$from_email -To `$admin_email -Subject "Ransomware File Group Updated" -SmtpServer `$smtp_server
 `Set-FSRMFileGroup -Name "Ransomware File Groups" -IncludePattern `$FilePatterns
