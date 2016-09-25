@@ -1,4 +1,6 @@
+<#
 
+#>
 #Get System info
 $majorVer = [System.Environment]::OSVersion.Version.Major
 $minorVer = [System.Environment]::OSVersion.Version.Minor
@@ -9,6 +11,9 @@ $smtp_server = Read-Host "Enter the address of the smtp server you wish to use"
 $admin_email = Read-Host "Enter the e-mail address you wish to receive notications at"
 $from_email = Read-Host "Enter the e-mail address that messages should appear to originate from"
 
+$FSRM_Log_Path = Read-Host "Enter the path you wish to store FSRM reports & logs in"
+
+Write-Output "Checking if FSRM is installed...`r`n"
 #Check if FSRM is allready installed
 $Check_FSRM = Get-WindowsFeature -Name FS-Resource-Manager
 if ($Check_FSRM -ne "True") {
@@ -40,6 +45,7 @@ do {
     $MaxHoneypotSize = Read-Host "How large should each honeypot folder be? (i.e 10MB , 500MB , or 1GB -- Remember, the larger the files the longer it will take for them to be encrypted!)"
 } while ( $MaxHoneypotSize -notmatch "\d*KB|\d*MB|\d*GB" )
 
+Write-Output "Creating honeypot folders..."
 $FileSize = $MaxHoneypotSize / 1000 
 $FileSize = [Math]::Round($FileSize, 0)
 
@@ -51,12 +57,13 @@ foreach ($Folder in $SMBShares) {
     $honeypots += $honeypot_folder_z
     New-Item $honeypot_folder_a -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"}
     New-Item $honeypot_folder_z -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"}
-    1..10 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize}
-    1..10 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize}
+    1..10 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize} | Out-Null
+    1..10 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize} | Out-Null
 }
 
+Write-Output "Configuring FSRM Global Settings"
 #Set FSRM Global Settings   
-$FSRM_Log_Path = "C:\FSRM"
+
 $ScriptPath = "$FSRM_Log_Path\Scripts"
 $LogPath = "$FSRM_Log_Path\Logs"
 $TemplatePath = "$FSRM_Log_Path\Templates"
@@ -70,9 +77,11 @@ Set-FSRMSetting -ReportLocationIncident $IncidentPath -ReportLocationScheduled $
 Set-FSRMSetting -EmailNotificationLimit 10 -EventNotificationLimit 1 
 
 #Create honeypot FSRM Group
+Write-Output "Creating FSRM File Groups"
 New-FSRMFileGroup -Name "Honeypot Files" -IncludePattern "*.*"
 
 #Create initial FSRM Cryptolocker Detection Group
+Write-Output "Downloading latest Ransomware extension list from Experiant.ca"
 $FilePatterns = ((Invoke-WebRequest -Uri "https://fsrm.experiant.ca/api/v1/combined").content | ConvertFrom-Json | ForEach-Object {$_.filters}) 
 New-FSRMFileGroup -Name "Ransomware File Groups" -IncludePattern $FilePatterns
 $FilePatterns | Out-File -FilePath $LogPath\Ransomware_File_Groups__$date.txt
@@ -95,6 +104,7 @@ $Honeypot_Event_Notification = New-FSRMAction Event -EventType Warning -Body $Ho
 New-FSRMFileScreenTemplate "Ransomware Detector" -IncludeGroup "Ransomware File Groups" -Notification $Detection_Email_Notification,$Detection_Event_Notification -Active:$false
 New-FSRMFileScreenTemplate "Honeypot Detector" -IncludeGroup "Honeypot Files" -Notification $Honeypot_Email_Notification,$Honeypot_Event_Notification -Active:$false
 
+Write-Output "Creating FSRM File Screens"
 foreach ($honeypot in $honeypots) {
     New-FSRMFileScreen -Path $honeypot -Template "Honeypot Detector"
 }
@@ -105,14 +115,14 @@ foreach ($drive in $LocalDrives) {
 
 #Create Ransomware File Group Updater Script
 $Update_Script = @"
-`$smtp_server = $smtp_server 
-`$from_email = $from_email
-`$admin_email = $admin_email
-`$FSRM_Log_Path = $Log_Path
+`$smtp_server = '$smtp_server' 
+`$from_email = '$from_email'
+`$admin_email = '$admin_email'
+`$FSRM_Log_Path = '$LogPath'
 `$date = Get-Date -Format dd-MM-yyyy
-`$FilePatterns = ((Invoke-WebRequest -Uri "https://fsrm.experiant.ca/api/v1/combined").content | ConvertFrom-Json | ForEach-Object {`$_.filters}) | Out-File -FilePath `$LogPath\Ransomware_File_Groups__`$date.txt
-`$OldFilePatterns = (Get-FSRMFileGroup -Name "Ransomware File Groups" ).IncludePatterns | Out-File 
-`$Compare = Compare-Object -ReferenceObject `$OldFilePatterns -DifferenceObject `$FilePatterns | Out-String -filepath `$FSRM_Log_Path\Ransomware_File_Groups_`$date.txt
+`$FilePatterns = ((Invoke-WebRequest -Uri "https://fsrm.experiant.ca/api/v1/combined").content | ConvertFrom-Json | ForEach-Object {`$_.filters}) 
+`$OldFilePatterns = (Get-FSRMFileGroup -Name "Ransomware File Groups" ).IncludePattern
+`$Compare = Compare-Object -ReferenceObject `$OldFilePatterns -DifferenceObject `$FilePatterns | Out-File -filepath `$FSRM_Log_Path\Ransomware_File_Groups_`$date.txt
 
 `Send-MailMessage -Body `$Compare -From `$from_email -To `$admin_email -Subject "Ransomware File Group Updated" -SmtpServer `$smtp_server
 `Set-FSRMFileGroup -Name "Ransomware File Groups" -IncludePattern `$FilePatterns
@@ -121,15 +131,10 @@ $Update_Script = @"
 $Update_Script | Out-File -FilePath "$ScriptPath\Ransomware_File_Group_Update.ps1" 
 
 #Create Scheduled Task to Update Ransomware File Groups
+Write-Output "Creating Ransomware File Group Updater task"
 $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-file '$ScriptPath\Ransomware_File_Group_Update.ps1'"
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday -At 9:00AM 
 $cred = Get-Credential 
 $username = $cred.UserName
 $Password = $cred.GetNetworkCredential().Password
 Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "Ransomware File Group Updater" -Description "Updates Ransomware File Groups from Experiant.ca" -RunLevel Highest -User $username -Password $password
-
-
-
-
-
-
