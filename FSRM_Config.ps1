@@ -93,7 +93,7 @@ $Detection_Event_Notification = New-FSRMAction Event -EventType Warning -Body $D
 $Honeypot_Event_Notification = New-FSRMAction Event -EventType Warning -Body $HoneypotMessage -RunLimitInterval 1
 
 New-FSRMFileScreenTemplate "Ransomware Detector" -IncludeGroup "Ransomware File Groups" -Notification $Detection_Email_Notification,$Detection_Event_Notification -Active:$false
-New-FSRMFileScreenTemplate "Honeypot Detector" -IncludeGroup "Honeypot" -Notification $Honeypot_Email_Notification,$Honeypot_Event_Notification -Active:$false
+New-FSRMFileScreenTemplate "Honeypot Detector" -IncludeGroup "Honeypot Files" -Notification $Honeypot_Email_Notification,$Honeypot_Event_Notification -Active:$false
 
 foreach ($honeypot in $honeypots) {
     New-FSRMFileScreen -Path $honeypot -Template "Honeypot Detector"
