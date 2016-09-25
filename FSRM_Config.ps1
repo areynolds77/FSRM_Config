@@ -43,9 +43,9 @@ if ($Check_FSRM -ne "True") {
 $SMBShares = Get-SmbShare -Special $false
 $NumFolders = $SMBShares.Count
 $honeypots = @()
-Write-Output "`r`nThere are $NumFolders shared from this server."
+Write-Output "`r`nThere are $NumFolders folders shared from this server. This script will create two hidden honeypot folders in each shared folder. "
 do {
-    $MaxHoneypotSize = Read-Host "How large should each honeypot folder be? (i.e 10MB , 500MB , or 1GB -- Remember, the larger the files the longer it will take for them to be encrypted!)"
+    $MaxHoneypotSize = Read-Host "How large should each honeypot folder be? (i.e 10MB , 500MB , or 1GB -- Remember, the larger the folders the longer it will take for them to be encrypted!)"
 } while ( $MaxHoneypotSize -notmatch "\d*KB|\d*MB|\d*GB" )
 
 Write-Output "Creating honeypot folders..."
@@ -60,8 +60,8 @@ foreach ($Folder in $SMBShares) {
     $honeypots += $honeypot_folder_z
     New-Item $honeypot_folder_a -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"} 
     New-Item $honeypot_folder_z -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"} 
-    1..10 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize} 
-    1..10 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize} 
+    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize} 
+    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize} 
 }
 
 Write-Output "Configuring FSRM Global Settings"
