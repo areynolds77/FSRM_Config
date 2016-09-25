@@ -24,7 +24,7 @@ if ($Check_FSRM -ne "True") {
                 Write-Output "FSRM not found...Installing (2012)"
                 Install-WindowsFeature -Name FS-Resource-Manager -IncludeManagementTools
                 #Remove Default File Screens
-                Get-FSRMFileScreen | ForEach-Object {Remove-FSRMFileScreen -path $_.Path -force} 
+                Get-FSRMFileScreen | ForEach-Object {Remove-FSRMFileScreen -path $_.Path -confirm:$false} 
             } elseif ($minorVer -ge 1) {
                 #Server 2008R2
                 Write-Output "FSRM not found...Installing (2008R2)"
