@@ -10,6 +10,7 @@ $cred = Get-Credential -Message "Enter the credentials that should be used to up
 $smtp_server = Read-Host "Enter the address of the smtp server you wish to use"
 $admin_email = Read-Host "Enter the e-mail address you wish to receive notications at"
 $from_email = Read-Host "Enter the e-mail address that messages should appear to originate from"
+$domain = Read-Host "Enter your domain name"
 
 $FSRM_Log_Path = Read-Host "Enter the path you wish to store FSRM logs, reports, and scripts in (This will not overwrite your current settings if you allready have FSRM installed!)"
 
@@ -165,3 +166,18 @@ $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday -At 9:00AM
 $username = $cred.UserName
 $Password = $cred.GetNetworkCredential().Password
 Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "Ransomware File Group Updater" -Description "Updates Ransomware File Groups from Experiant.ca" -RunLevel Highest -User $username -Password $password
+
+#Create SMB Blocker task
+$SMBBlock_Script = @"
+`$domain = '$domain'
+`$FSRM_Group_Name = "Honeypot Files"
+`smtp_server = '$smtp_server'
+`$from_email = '$from_email'
+`$admin_email = '$admin_email'
+`$winlog = Get-WinEvent -MaxEvents 1 -FilterHashtable @{LogName="Application";ID=8215} | Where-Object {`$_.Message -match `$FSRM_Group_Name}
+`$user = `$winlog.Message -match "`$domain\\\S*"
+if (`$user -eq `$false) { break }
+`$user = `$matches[0]
+`$out = Get-SMBShare -special `$false | ForEach-Object { Block-SMBShareAccess -Name `$_.Name -AccountName `$user -force} | Out-String
+Send-MailMessage -Body `$out -SmtpServer `$smtp_server -From `$from_email -To `$admin_email -Subject "SMB Access blocked for `$user"   
+"@
