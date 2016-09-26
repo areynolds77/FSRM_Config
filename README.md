@@ -4,7 +4,7 @@ This script (FSRM_Config.ps1) will install File Server Resource Manager (FSRM) a
 If you already have FSRM installed, this will simply add the neccessary file groups/screens, as well as a weekly task to update the ransomware extension list. 
 
 ##Installation Instructions
-    1.  [Download 'FSRM_Config.ps1'](https://github.com/areynolds77/FSRM_Config/blob/master/FSRM_Config.ps1)  
+    1. Download ['FSRM_Config.ps1'](https://github.com/areynolds77/FSRM_Config/blob/master/FSRM_Config.ps1)  
     2. Run 'FSRM_Config.ps1' as an administrator.
         --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts
     3. Follow the prompts.
