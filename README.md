@@ -6,6 +6,7 @@ If you already have FSRM installed, this will simply add the neccessary file gro
 ##System Requirements
 * Windows Server 2012 or later (Server 2008 support coming)
 * Powershell 3.0 
+
 ##Installation Instructions
 1. [Download 'FSRM_Config.ps1'](https://github.com/areynolds77/FSRM_Config/blob/master/FSRM_Config.ps1)  
 2. Run 'FSRM_Config.ps1' as an administrator.
