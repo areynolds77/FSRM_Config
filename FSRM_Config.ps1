@@ -15,8 +15,8 @@ $FSRM_Log_Path = Read-Host "Enter the path you wish to store FSRM logs, reports,
 
 Write-Output "Checking if FSRM is installed...`r`n"
 #Check if FSRM is allready installed
-$Check_FSRM = Get-WindowsFeature -Name FS-Resource-Manager
-if ($Check_FSRM -ne "True") {
+$Check_FSRM = (Get-WindowsFeature -Name FS-Resource-Manager).InstallState
+if ($Check_FSRM -ne "Installed") {
     if ($majorVer -ge 6) {
             if ($minorVer -ge 2) {
                 #Server 2012
@@ -42,7 +42,6 @@ if ($Check_FSRM -ne "True") {
 
 #Create honeypot folders & files
 $SMBShares = Get-SmbShare -Special $false | Out-GridView -Title "Select Shares to create honeypot folders in:" -PassThru
-$NumFolders = $SMBShares.Count
 $honeypots = @()
 do {
     $MaxHoneypotSize = Read-Host "How large should each honeypot folder be? (i.e 10MB , 500MB , or 1GB -- Remember, the larger the folders the longer it will take for them to be encrypted!)"
@@ -53,15 +52,32 @@ $FileSize = $MaxHoneypotSize / 1000
 $FileSize = [Math]::Round($FileSize, 0)
 
 foreach ($Folder in $SMBShares) {
+    #Set initial variables
+    $progresscount = 1
     $honeypot_folder = $Folder.Path
     $honeypot_folder_a = "$honeypot_folder\___Honeypot"
     $honeypot_folder_z = "$honeypot_folder\zzz___Honeypot"
     $honeypots += $honeypot_folder_a 
     $honeypots += $honeypot_folder_z
+    
+    #Create honeypot folders
     New-Item $honeypot_folder_a -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"} 
-    New-Item $honeypot_folder_z -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"} 
-    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize} | Out-Null 
-    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize} | Out-Null
+    New-Item $honeypot_folder_z -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"}
+
+    #Create honeypot files
+    Write-Output "Creating honeypot files in $honeypot_folder_a" 
+    1..100 | ForEach-Object { 
+        fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize
+        Write-Progress -Activity "Creating honeypot files in $honeypot_folder_a..." -PercentComplete ($progresscount/$_.Count)
+        $progresscount++
+    } | Out-Null 
+    $progresscount = 1
+    Write-Output "Creating honeypot files in $honeypot_folder_z"
+    1..100 | ForEach-Object { 
+        fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize
+        Write-Progress -Activity "Creating honeypot files in $honeypot_folder_a..." -PercentComplete ($progresscount/$_.Count)
+        $progresscount++
+    } | Out-Null
 }
 
 Write-Output "Configuring FSRM Global Settings"
