@@ -33,7 +33,7 @@ Most ransomware infections will attempt to encrypt any file they have access to,
 This script will retreive a list of all the folders that are shared from the server, create a pair of hidden honeypot folders filled with fake files, and then configure FSRM to monitor these folders for any activity. 
 By keeping the folders hidden, users will not see them, but ransomware infections will--and as soon as they attempt to modify any of the files within a honeypot folder, FSRM will send an e-mail and log an event to the Windows Event log. 
 You can then create a scheduled task to watch for these events, and block SMB access for the infected user.
- 
+
 * Why are two honeypot folders created? 
     Most ransomware infections start encrypting files in alphabetical order, which is why the first folder created is "___Honeypot". However, some infections work in reverse order, hence the second folder, "zzz___Honeypot". 
     This ***should*** ensure that your honeypot folders are encrypted before an actual data.
@@ -43,21 +43,23 @@ You can then create a scheduled task to watch for these events, and block SMB ac
 ###Detection
 Experiant is a Canadian IT firm that maintains a publicly accessible list of known ransomware extensions. FSRM can be configured to watch for these extensions, and alert admins & users if a matching file is detected. 
 This script will check the Experiant list every Tuesday at 9AM for new patterns, and update the FSRM file groups if neccessary. It will also e-mail you a list of any new (or removed) patterns. 
+
 ##To-Do
 * Add support for Server 2008 & Server 2008R2
 * Improve documentation
 * Add error handling & input validation
 * Automatically create SMBBlocker task
+
 ##What it does
 * Collects initial setup information:
-** User Credentials are used to create a scheduled task that downloads a list of  the latest ransomware extensions, and then update the FSRM File group.
-** STMP information is used to configure e-mail alerting. Anytime a file with a possible ransomware extension is detected, FSRM will e-mail both an admin, and the user that created the file. 
+    * User Credentials are used to create a scheduled task that downloads a list of  the latest ransomware extensions, and then update the FSRM File group.
+    * STMP information is used to configure e-mail alerting. Anytime a file with a possible ransomware extension is detected, FSRM will e-mail both an admin, and the user that created the file. 
 * Checks if FSRM is already installed
-** If FSRM is not installed, it will be installed, and the default file screens will be removed
+     * If FSRM is not installed, it will be installed, and the default file screens will be removed
 * Create honeypot folders
-** Retreive a list of every SMB share on the local server (excluding the built-in windows shares)
-** Allow the user to select which shares should have honeypot folders
-** The user will be prompted to set a size for each honeypot folder--
+    * Retreive a list of every SMB share on the local server (excluding the built-in windows shares)
+    * Allow the user to select which shares should have honeypot folders
+    * The user will be prompted to set a size for each honeypot folder--
 
 
         
