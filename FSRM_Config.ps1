@@ -41,10 +41,9 @@ if ($Check_FSRM -ne "True") {
 }
 
 #Create honeypot folders & files
-$SMBShares = Get-SmbShare -Special $false
+$SMBShares = Get-SmbShare -Special $false | Out-GridView -Title "Select Shares to create honeypot folders in:" -PassThru
 $NumFolders = $SMBShares.Count
 $honeypots = @()
-Write-Output "`r`nThere are $NumFolders folders shared from this server. This script will create two hidden honeypot folders in each shared folder. "
 do {
     $MaxHoneypotSize = Read-Host "How large should each honeypot folder be? (i.e 10MB , 500MB , or 1GB -- Remember, the larger the folders the longer it will take for them to be encrypted!)"
 } while ( $MaxHoneypotSize -notmatch "\d*KB|\d*MB|\d*GB" )
@@ -61,8 +60,8 @@ foreach ($Folder in $SMBShares) {
     $honeypots += $honeypot_folder_z
     New-Item $honeypot_folder_a -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"} 
     New-Item $honeypot_folder_z -ItemType Directory | ForEach-Object {$_.Attributes = "hidden"} 
-    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize} 
-    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize} 
+    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_a\DO_NOT_OPEN_$_.txt" $FileSize} | Out-Null 
+    1..1000 | ForEach-Object { fsutil.exe file createnew "$honeypot_folder_z\DO_NOT_OPEN_$_.txt" $FileSize} | Out-Null
 }
 
 Write-Output "Configuring FSRM Global Settings"
@@ -144,7 +143,7 @@ $Update_Script | Out-File -FilePath "$ScriptPath\Ransomware_File_Group_Update.ps
 
 #Create Scheduled Task to Update Ransomware File Groups
 Write-Output "Creating Ransomware File Group Updater task"
-$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-file '$ScriptPath\Ransomware_File_Group_Update.ps1'"
+$action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-file .\Ransomware_File_Group_Update.ps1" -WorkingDirectory "$ScriptPath"
 $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Tuesday -At 9:00AM 
 
 $username = $cred.UserName
