@@ -83,7 +83,7 @@ foreach ($Folder in $SMBShares) {
 
 Write-Output "Configuring FSRM Global Settings"
 #Set FSRM Global Settings   
-if ($Check_FSRM -ne "True") {
+if ($Check_FSRM -ne "Installed") {
     $ScriptPath = "$FSRM_Log_Path\Scripts"
     $LogPath = "$FSRM_Log_Path\Logs"
     $TemplatePath = "$FSRM_Log_Path\Templates"
@@ -95,8 +95,11 @@ if ($Check_FSRM -ne "True") {
     Set-FSRMSetting -SmtpServer $smtp_server -AdminEmailAddress $admin_email -FromEmailAddress $from_email 
     Set-FSRMSetting -ReportLocationIncident $IncidentPath -ReportLocationScheduled $ScheduledPath -ReportLocationOnDemand $InteractivePath
     Set-FSRMSetting -EmailNotificationLimit 10 -EventNotificationLimit 1 
+} else {
+    $ScriptPath = "$FSRM_Log_Path\Scripts"
+    $LogPath = "$FSRM_Log_Path\Logs"
+    New-Item -ItemType Directory -Path $ScriptPath , $LogPath
 }
-
 
 #Create honeypot FSRM Group
 Write-Output "Creating FSRM File Groups"
@@ -181,3 +184,4 @@ if (`$user -eq `$false) { break }
 `$out = Get-SMBShare -special `$false | ForEach-Object { Block-SMBShareAccess -Name `$_.Name -AccountName `$user -force} | Out-String
 Send-MailMessage -Body `$out -SmtpServer `$smtp_server -From `$from_email -To `$admin_email -Subject "SMB Access blocked for `$user"   
 "@
+$SMBBlock_Script | Out-File "$ScriptPath\SMB_Blocker.ps1"
