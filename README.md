@@ -4,6 +4,7 @@ This script (FSRM_Config.ps1) will install File Server Resource Manager (FSRM) a
 If you already have FSRM installed, this will simply add the neccessary file groups/screens, as well as a weekly task to update the ransomware extension list. 
 
 ##Installation Instructions
+<<<<<<< HEAD
 1. [Download 'FSRM_Config.ps1'](https://github.com/areynolds77/FSRM_Config/blob/master/FSRM_Config.ps1)  
 2. Run 'FSRM_Config.ps1' as an administrator.
     --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts
@@ -24,6 +25,28 @@ If you already have FSRM installed, this will simply add the neccessary file gro
         + Set the argument to ".\SMBBlock.ps1"
         + Set the "Start in (optional):" field to the script folder in the FSRM config folder you provided earlier (normally C:\FSRM\)
 5. Test!
+=======
+    1. Download [FSRMConfig](https://github.com/areynolds77/FSRM_Config/blob/master/FSRM_Config.ps1)  
+    2. Run 'FSRM_Config.ps1' as an administrator.
+        --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts
+    3. Follow the prompts.
+    4. Once the script has finished, if you want to block any user that modifies one of the honeypot files, you will need to manually create a new scheduled task:
+        + Open "Task Scheduler"
+        + Create a new Task
+        + Check the following boxes on the "General" tab:
+            + "Run whether user is logged on or not"
+            + "Run with highest priveleges"
+        + Create a new "Trigger"
+            + Begin the task "On an event"
+            + Set the "Log" to "Application"
+            + Set the "Source" to "SRMSVC"
+            + Set the "Event ID" to "8215"
+        + Create a new "Action"
+            + Set the "Program/Script" field to "powershell.exe"
+            + Set the argument to ".\SMBBlock.ps1"
+            + Set the "Start in (optional):" field to the script folder in the FSRM config folder you provided earlier (normally C:\FSRM\)
+    5. Test!
+>>>>>>> 44630f5339f39f6453c6fcaaa8382e710e09dda8
 
 
 ##How it works
