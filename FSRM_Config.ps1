@@ -1,6 +1,3 @@
-<#
-
-#>
 #Get System info
 $majorVer = [System.Environment]::OSVersion.Version.Major
 $minorVer = [System.Environment]::OSVersion.Version.Minor
@@ -174,7 +171,7 @@ Register-ScheduledTask -Action $action -Trigger $trigger -TaskName "Ransomware F
 $SMBBlock_Script = @"
 `$domain = '$domain'
 `$FSRM_Group_Name = "Honeypot Files"
-`smtp_server = '$smtp_server'
+`$smtp_server = '$smtp_server'
 `$from_email = '$from_email'
 `$admin_email = '$admin_email'
 `$winlog = Get-WinEvent -MaxEvents 1 -FilterHashtable @{LogName="Application";ID=8215} | Where-Object {`$_.Message -match `$FSRM_Group_Name}
@@ -185,3 +182,11 @@ if (`$user -eq `$false) { break }
 Send-MailMessage -Body `$out -SmtpServer `$smtp_server -From `$from_email -To `$admin_email -Subject "SMB Access blocked for `$user"   
 "@
 $SMBBlock_Script | Out-File "$ScriptPath\SMB_Blocker.ps1"
+
+#Import SMB Blocker task
+(Invoke-WebRequest -uri "https://raw.githubusercontent.com/areynolds77/FSRM_Config/master/SMBBlock.xml").Content | Out-File $ScriptPath\SMBBlock.xml
+schtasks.exe /CREATE /XML "$ScriptPath\SMBBLock.xml" /TN "SMB Access Blocker" /RU $username /P $Password 
+
+#Finish
+
+Write-Output "All Done! Make sure to double check and test. :)" 
