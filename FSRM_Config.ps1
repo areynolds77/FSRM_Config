@@ -183,10 +183,61 @@ Send-MailMessage -Body `$out -SmtpServer `$smtp_server -From `$from_email -To `$
 "@
 $SMBBlock_Script | Out-File "$ScriptPath\SMB_Blocker.ps1"
 
-#Import SMB Blocker task
+#Import SMB Blocker task---MUST FIX XML Formmatting? 
+<#
 (Invoke-WebRequest -uri "https://raw.githubusercontent.com/areynolds77/FSRM_Config/master/SMBBlock.xml").Content | Out-File $ScriptPath\SMBBlock.xml
-schtasks.exe /CREATE /XML "$ScriptPath\SMBBLock.xml" /TN "SMB Access Blocker" /RU $username 
-
+ 
+$SMBBlock_Task = @"<?xml version="1.0" encoding="UTF-16"?>
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Date>2016-09-20T22:53:19.3711929</Date>
+    <Author>Al Reynolds</Author>
+  </RegistrationInfo>
+  <Triggers>
+    <EventTrigger>
+      <Enabled>true</Enabled>
+      <Subscription>&lt;QueryList&gt;&lt;Query Id="0" Path="Application"&gt;&lt;Select Path="Application"&gt;*[System[Provider[@Name='SRMSVC'] and EventID=8215]]&lt;/Select&gt;&lt;/Query&gt;&lt;/QueryList&gt;</Subscription>
+    </EventTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId></UserId>
+      <LogonType>Password</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>true</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>true</StopIfGoingOnBatteries>
+    <AllowHardTerminate>true</AllowHardTerminate>
+    <StartWhenAvailable>false</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <IdleSettings>
+      <StopOnIdleEnd>true</StopOnIdleEnd>
+      <RestartOnIdle>false</RestartOnIdle>
+    </IdleSettings>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <Hidden>false</Hidden>
+    <RunOnlyIfIdle>false</RunOnlyIfIdle>
+    <DisallowStartOnRemoteAppSession>false</DisallowStartOnRemoteAppSession>
+    <UseUnifiedSchedulingEngine>false</UseUnifiedSchedulingEngine>
+    <WakeToRun>false</WakeToRun>
+    <ExecutionTimeLimit>P3D</ExecutionTimeLimit>
+    <Priority>7</Priority>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>powershell.exe</Command>
+      <Arguments>-file ".\SMB_Blocker.ps1"</Arguments>
+      <WorkingDirectory>C:\FSRM\Scripts</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>"
+$SMBBlock_Task | Out-File $ScriptPath\SMBBlock.xml
+schtasks.exe /CREATE /XML "$ScriptPath\SMBBLock.xml" /TN "SMB Access Blocker" /RU $username
+#>
 #Finish
 
 Write-Output "All Done! Make sure to double check and test. :)" 
