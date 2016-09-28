@@ -185,7 +185,7 @@ $SMBBlock_Script | Out-File "$ScriptPath\SMB_Blocker.ps1"
 
 #Import SMB Blocker task
 (Invoke-WebRequest -uri "https://raw.githubusercontent.com/areynolds77/FSRM_Config/master/SMBBlock.xml").Content | Out-File $ScriptPath\SMBBlock.xml
-schtasks.exe /CREATE /XML "$ScriptPath\SMBBLock.xml" /TN "SMB Access Blocker" /RU $username /P $Password 
+schtasks.exe /CREATE /XML "$ScriptPath\SMBBLock.xml" /TN "SMB Access Blocker" /RU $username 
 
 #Finish
 
