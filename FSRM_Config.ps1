@@ -200,7 +200,6 @@ $SMBBlock_Task = @"
   <Principals>
     <Principal id="Author">
       <UserId>$username</UserId>
-      <UserId></UserId>
       <LogonType>Password</LogonType>
       <RunLevel>HighestAvailable</RunLevel>
     </Principal>
