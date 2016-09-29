@@ -236,6 +236,6 @@ $SMBBlock_Task = @"
 </Task>
 "@
 
-Register-ScheduledTask -Xml $SMBBlock_Task -User $username -Password $pass -TaskName "SMB Access Blocker" 
+Register-ScheduledTask -Xml $SMBBlock_Task -User $username -Password $Password -TaskName "SMB Access Blocker" 
 
 Write-Output "All Done! Make sure to double check and test. :)" 
