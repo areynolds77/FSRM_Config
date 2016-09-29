@@ -12,22 +12,7 @@ If you already have FSRM installed, this will simply add the neccessary file gro
 2. Run 'FSRM_Config.ps1' as an administrator.
     --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts
 3. Follow the prompts.
-4. Once the script has finished, if you want to block any user that modifies one of the honeypot files, you will need to manually create a new scheduled task:
-    + Open "Task Scheduler"
-    + Create a new Task
-    + Check the following boxes on the "General" tab:
-        + "Run whether user is logged on or not"
-        + "Run with highest priveleges"
-    + Create a new "Trigger"
-        + Begin the task "On an event"
-        + Set the "Log" to "Application"
-        + Set the "Source" to "SRMSVC"
-        + Set the "Event ID" to "8215"
-    + Create a new "Action"
-        + Set the "Program/Script" field to "powershell.exe"
-        + Set the argument to ".\SMBBlock.ps1"
-        + Set the "Start in (optional):" field to the script folder in the FSRM config folder you provided earlier (normally C:\FSRM\)
-5. Test!
+4. Test!
 
 ##How it works
 FSRM provides two different avenues to protecting against ransomware infections: bait, and detection. 
@@ -58,11 +43,34 @@ This script will check the Experiant list every Tuesday at 9AM for new patterns,
     * User Credentials are used to create a scheduled task that downloads a list of  the latest ransomware extensions, and then update the FSRM File group.
     * STMP information is used to configure e-mail alerting. Anytime a file with a possible ransomware extension is detected, FSRM will e-mail both an admin, and the user that created the file. 
 * Checks if FSRM is already installed
-     * If FSRM is not installed, it will be installed, and the default file screens will be removed
+     * If FSRM is not installed, it will be installed, and the default file screens will be removed.
+     * If FSRM is installed, only the Scripts and Log folders will be created.
 * Create honeypot folders
     * Retreive a list of every SMB share on the local server (excluding the built-in windows shares)
     * Allow the user to select which shares should have honeypot folders
-    * The user will be prompted to set a size for each honeypot folder--
+    * The user will be prompted to set a size for each honeypot folder--remember the larger the size of the folder, the longer it will take the ransomware to get to files that actually matter.
+* Create File groups
+    * Two File groups will be created; "Honeypot Files" and "Ransomware File Group"
+        * Honeypot Files is simply an all files filter--using the default "All Files" group *could* cause the SMB Access Blocker script to run anytime a file screen using the "All Files" group is tripped.
+        * The "Ransomware File Group" contains all of the extensions downloaded from Experiant's api. 
+* Create File Screen Templates
+    * Two File Screen Templates will be created; "Honeypot Detector", and "Ransomware Detector" 
+        * The "Honeypot Detector" template uses the "Honeypot Files" file group, and will send an e-mail and log a message to the event log.
+        * The "Ransomware Detector" template uses the "Ransomware File Group" and will send an e-mail and log a message to the event log.
+        * Both templates notify both the FSRM Admin & the user who attempted to modify the file. 
+* Create File screens
+    * The script will then create a file screen using the "Honeypot Detector" File Screen Template for each of the shared folders the user selected earlier.
+    * The script will then create a file screen using the "Ransomware Detector" File Screen Template for each of the local drives.
+* Create Ransomware File Group Update Scripts
+    * The script will create a powershell script (to be stored in the 'FSRM\Scripts' directory), that downloads the latest ransomware definitions from Experiant, updates the file group within FSRM, and then sends an e-mail to the FSRM admin listing any changes to the File Group.
+    * The script will then create a scheduled task to execute the above task every Tuesday at 9:00AM.
+* Create SMB Access Blocker script and task
+    * The script will create a powershell script (to be stored in the 'FSRM\Scripts' directory) that will search the 'Application' Event Log for messages with an EventID of '8215'. 
+    These are the events that FSRM logs anytime a File Screen is matched. The script will check to make sure that file screen matches the 'Honeypot Files' file group, so as to avoid accidental blocks.
+    The script will then get a list of all SMB Shares on the local server, and block the offending user from accessing them. A notification message will be sent to the FSRM admin.
+    * A Scheduled Task will then be created to executed the 'SMB Access Blocker' script anytime a message with an EventID of '8215' is logged.
+    
+
 
 
         
