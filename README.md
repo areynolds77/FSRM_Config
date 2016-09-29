@@ -36,14 +36,14 @@ A scheduled task watches for these events, and will then block SMB access for th
     Get-SMBShare -special $false | foreach { UnBlock-SMBShareAccess -Name $_.Name -AccountName $ACCOUNTNAME -force}
     ```
 
-    *Where $ACCOUNTNAME is the SAM account name for the user you wish to restore access for*  
+    *Where $ACCOUNTNAME is the SAM account name for the user you wish to restore access for.*  
 ###Detection
 [Experiant](http://experiant.ca/) is a Canadian IT firm that maintains a publicly accessible list of known ransomware extensions. FSRM can be configured to watch for these extensions, and alert admins & users if a matching file is detected. 
 This script will check the Experiant list every Tuesday at 9AM for new patterns, and update the FSRM file groups if neccessary. It will also e-mail you a list of any new (or removed) patterns.
 You can read more about their efforts to combat ransomware [here](https://fsrm.experiant.ca/) 
 
-* Why don't you block file server access when a file is detected matching the Experiant list? 
-    Because the Experiant list can be somewhat generous in the extensions it detects--I tend to get a lot of false positives from it. You can if you want to though!
+    * Why don't you block file server access when a file is detected matching the Experiant list? 
+        Because the Experiant list can be somewhat generous in the extensions it detects--I tend to get a lot of false positives from it. You can if you want to though!
 
 ##To-Do
 * Add support for Server 2008 & Server 2008R2
