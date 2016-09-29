@@ -183,9 +183,17 @@ Send-MailMessage -Body `$out -SmtpServer `$smtp_server -From `$from_email -To `$
 "@
 $SMBBlock_Script | Out-File "$ScriptPath\SMB_Blocker.ps1"
 
+<<<<<<< HEAD
 #Import SMB Blocker task
 $SMBBlock_Task = @"
 <?xml version="1.0" encoding="UTF-16"?>
+=======
+#Import SMB Blocker task---MUST FIX XML Formmatting? 
+<#
+(Invoke-WebRequest -uri "https://raw.githubusercontent.com/areynolds77/FSRM_Config/master/SMBBlock.xml").Content | Out-File $ScriptPath\SMBBlock.xml
+ 
+$SMBBlock_Task = @"<?xml version="1.0" encoding="UTF-16"?>
+>>>>>>> 4e70179cc6b7e7ea064429613134dedb40ca5f65
 <Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
   <RegistrationInfo>
     <Date>2016-09-20T22:53:19.3711929</Date>
@@ -199,7 +207,11 @@ $SMBBlock_Task = @"
   </Triggers>
   <Principals>
     <Principal id="Author">
+<<<<<<< HEAD
       <UserId>$username</UserId>
+=======
+      <UserId></UserId>
+>>>>>>> 4e70179cc6b7e7ea064429613134dedb40ca5f65
       <LogonType>Password</LogonType>
       <RunLevel>HighestAvailable</RunLevel>
     </Principal>
@@ -229,6 +241,7 @@ $SMBBlock_Task = @"
     <Exec>
       <Command>powershell.exe</Command>
       <Arguments>-file ".\SMB_Blocker.ps1"</Arguments>
+<<<<<<< HEAD
       <WorkingDirectory>$ScriptPath</WorkingDirectory>
     </Exec>
   </Actions>
@@ -236,6 +249,15 @@ $SMBBlock_Task = @"
 "@
 
 Register-ScheduledTask -Xml $SMBBlock_Task -User $username -Password $pass -TaskName "SMB Access Blocker" 
+=======
+      <WorkingDirectory>C:\FSRM\Scripts</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>"
+$SMBBlock_Task | Out-File $ScriptPath\SMBBlock.xml
+schtasks.exe /CREATE /XML "$ScriptPath\SMBBLock.xml" /TN "SMB Access Blocker" /RU $username
+#>
+>>>>>>> 4e70179cc6b7e7ea064429613134dedb40ca5f65
 #Finish
 
 Write-Output "All Done! Make sure to double check and test. :)" 
