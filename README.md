@@ -31,11 +31,12 @@ A scheduled task watches for these events, and will then block SMB access for th
     FSRM will log an event to the Windows Event log indicating that a honeypot file has been modified. Task Scheduler watches for these events, and anytime one is logged will execute a script to block access to the file server.
 * What do I do when I want to restore access for a blocked user? 
     Simply execute this command in an elevated Powershell console: 
-    
+
     ```powershell
     Get-SMBShare -special $false | foreach { UnBlock-SMBShareAccess -Name $_.Name -AccountName $ACCOUNTNAME -force}
     ```
 
+    *Where $ACCOUNTNAME is the SAM account name for the user you wish to restore access for*  
 ###Detection
 [Experiant](http://experiant.ca/) is a Canadian IT firm that maintains a publicly accessible list of known ransomware extensions. FSRM can be configured to watch for these extensions, and alert admins & users if a matching file is detected. 
 This script will check the Experiant list every Tuesday at 9AM for new patterns, and update the FSRM file groups if neccessary. It will also e-mail you a list of any new (or removed) patterns.
