@@ -29,8 +29,9 @@ You can then create a scheduled task to watch for these events, and block SMB ac
     Because it takes time for FSRM to recognize that a ransomware infection is taking place and then lock the offending users out. The more files (and the larger the files) that the ransomware has to infect, the longer it will take before it starts infecting actual files.
 
 ###Detection
-Experiant is a Canadian IT firm that maintains a publicly accessible list of known ransomware extensions. FSRM can be configured to watch for these extensions, and alert admins & users if a matching file is detected. 
-This script will check the Experiant list every Tuesday at 9AM for new patterns, and update the FSRM file groups if neccessary. It will also e-mail you a list of any new (or removed) patterns. 
+[Experiant](http://experiant.ca/) is a Canadian IT firm that maintains a publicly accessible list of known ransomware extensions. FSRM can be configured to watch for these extensions, and alert admins & users if a matching file is detected. 
+This script will check the Experiant list every Tuesday at 9AM for new patterns, and update the FSRM file groups if neccessary. It will also e-mail you a list of any new (or removed) patterns.
+You can read more about their efforts to combat ransomware [here](https://fsrm.experiant.ca/) 
 
 ##To-Do
 * Add support for Server 2008 & Server 2008R2
@@ -69,7 +70,7 @@ This script will check the Experiant list every Tuesday at 9AM for new patterns,
     These are the events that FSRM logs anytime a File Screen is matched. The script will check to make sure that file screen matches the 'Honeypot Files' file group, so as to avoid accidental blocks.
     The script will then get a list of all SMB Shares on the local server, and block the offending user from accessing them. A notification message will be sent to the FSRM admin.
     * A Scheduled Task will then be created to executed the 'SMB Access Blocker' script anytime a message with an EventID of '8215' is logged.
-    
+
 
 
 
