@@ -31,6 +31,7 @@ A scheduled task watches for these events, and will then block SMB access for th
     FSRM will log an event to the Windows Event log indicating that a honeypot file has been modified. Task Scheduler watches for these events, and anytime one is logged will execute a script to block access to the file server.
 * What do I do when I want to restore access for a blocked user? 
     Simply execute this command in an elevated Powershell console: 
+    
     ```powershell
     Get-SMBShare -special $false | foreach { UnBlock-SMBShareAccess -Name $_.Name -AccountName $ACCOUNTNAME -force}
     ```
