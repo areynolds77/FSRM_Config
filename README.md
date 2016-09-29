@@ -20,18 +20,28 @@ FSRM provides two different avenues to protecting against ransomware infections:
 Most ransomware infections will attempt to encrypt any file they have access to, regardless of whether that file is stored locally, or on a network share (even hidden shares are vulnerable).
 This script will retreive a list of all the folders that are shared from the server, create a pair of hidden honeypot folders filled with fake files, and then configure FSRM to monitor these folders for any activity. 
 By keeping the folders hidden, users will not see them, but ransomware infections will--and as soon as they attempt to modify any of the files within a honeypot folder, FSRM will send an e-mail and log an event to the Windows Event log. 
-You can then create a scheduled task to watch for these events, and block SMB access for the infected user.
+A scheduled task watches for these events, and will then block SMB access for the infected user.
 
 * Why are two honeypot folders created? 
     Most ransomware infections start encrypting files in alphabetical order, which is why the first folder created is "___Honeypot". However, some infections work in reverse order, hence the second folder, "zzz___Honeypot". 
     This ***should*** ensure that your honeypot folders are encrypted before an actual data.
 * Why are so many files created in each honeypot folder? 
     Because it takes time for FSRM to recognize that a ransomware infection is taking place and then lock the offending users out. The more files (and the larger the files) that the ransomware has to infect, the longer it will take before it starts infecting actual files.
+* What happens when a honeypot file is modified? 
+    FSRM will log an event to the Windows Event log indicating that a honeypot file has been modified. Task Scheduler watches for these events, and anytime one is logged will execute a script to block access to the file server.
+* What do I do when I want to restore access for a blocked user? 
+    Simply execute this command in an elevated Powershell console: 
+    ```powershell
+    Get-SMBShare -special $false | foreach { UnBlock-SMBShareAccess -Name $_.Name -AccountName $ACCOUNTNAME -force}
+    ```
 
 ###Detection
 [Experiant](http://experiant.ca/) is a Canadian IT firm that maintains a publicly accessible list of known ransomware extensions. FSRM can be configured to watch for these extensions, and alert admins & users if a matching file is detected. 
 This script will check the Experiant list every Tuesday at 9AM for new patterns, and update the FSRM file groups if neccessary. It will also e-mail you a list of any new (or removed) patterns.
 You can read more about their efforts to combat ransomware [here](https://fsrm.experiant.ca/) 
+
+* Why don't you block file server access when a file is detected matching the Experiant list? 
+    Because the Experiant list can be somewhat generous in the extensions it detects--I tend to get a lot of false positives from it. You can if you want to though!
 
 ##To-Do
 * Add support for Server 2008 & Server 2008R2
@@ -70,6 +80,9 @@ You can read more about their efforts to combat ransomware [here](https://fsrm.e
     These are the events that FSRM logs anytime a File Screen is matched. The script will check to make sure that file screen matches the 'Honeypot Files' file group, so as to avoid accidental blocks.
     The script will then get a list of all SMB Shares on the local server, and block the offending user from accessing them. A notification message will be sent to the FSRM admin.
     * A Scheduled Task will then be created to executed the 'SMB Access Blocker' script anytime a message with an EventID of '8215' is logged.
+
+##Security Risks
+* The Powershell cmdlets for interfacing with Task Scheduler do not accept PSCredentials. This means that the provided password must be decrypted, and passed to Task Scheduler in plaintext. Make sure you close the Powershell console once the script has finished.
 
 
 
