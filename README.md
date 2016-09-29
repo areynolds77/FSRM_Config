@@ -12,6 +12,7 @@ If you already have FSRM installed, this will simply add the neccessary file gro
 2. Run 'FSRM_Config.ps1' as an administrator.
     --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts
 3. Follow the prompts.
+
 4. Test!
 
 ##How it works
@@ -43,6 +44,7 @@ This script will check the Experiant list every Tuesday at 9AM for new patterns,
 You can read more about their efforts to combat ransomware [here](https://fsrm.experiant.ca/) 
 
     * Why don't you block file server access when a file is detected matching the Experiant list? 
+    
         Because the Experiant list can be somewhat generous in the extensions it detects--I tend to get a lot of false positives from it. You can if you want to though!
 
 ##To-Do
