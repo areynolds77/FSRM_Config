@@ -21,14 +21,17 @@ if ($Check_FSRM -ne "Installed") {
                 Write-Output "FSRM not found...Installing (2012)"
                 Install-WindowsFeature -Name FS-Resource-Manager -IncludeManagementTools
                 #Remove Default File Screens
-                Get-FSRMFileScreen | ForEach-Object {Remove-FSRMFileScreen -path $_.Path -confirm:$false} 
+                Get-FSRMFileScreen | ForEach-Object {Remove-FSRMFileScreen -path $_.Path -confirm:$false}
+                $OS = "2012" 
             } elseif ($minorVer -ge 1) {
                 #Server 2008R2
                 Write-Output "FSRM not found...Installing (2008R2)"
                 Add-WindowsFeature FS-FileServer, FS-Resource-Manager
+                $OS = "2008R2"
             } else {
                 Write-Output "FSRM not found...Installing (2008)"
                 &servermgrcmd -Install FS-FileServer FS-Resource-Manager
+                $OS = "2008"
             }
         } else {
             Write-Output "Unsupported Windows version detected. Quitting..."
@@ -39,7 +42,12 @@ if ($Check_FSRM -ne "Installed") {
 }
 
 #Create honeypot folders & files
-$SMBShares = Get-SmbShare -Special $false | Out-GridView -Title "Select Shares to create honeypot folders in:" -PassThru
+if ($OS -eq "2012") {
+    $SMBShares = Get-SmbShare -Special $false | Out-GridView -Title "Select Shares to create honeypot folders in:" -PassThru
+} elseif ( $OS -eq "2008R2") {
+    $SMBShares = Get-WmiObject -class win32_share | Where-Object {$_.Name -ne "ADMIN$" -and "IPC$"} | Out-GridView -Title "Select Shares to create honeypot folders in:" -PassThru
+}
+
 $honeypots = @()
 do {
     $MaxHoneypotSize = Read-Host "How large should each honeypot folder be? (i.e 10MB , 500MB , or 1GB -- Remember, the larger the folders the longer it will take for them to be encrypted!)"
@@ -88,10 +96,14 @@ if ($Check_FSRM -ne "Installed") {
     $ScheduledPath = "$FSRM_Log_Path\Reports\Scheduled"
     $InteractivePath = "$FSRM_Log_Path\Reports\Interactive"
     New-Item -ItemType Directory -Path $ScriptPath , $LogPath , $TemplatePath , $IncidentPath , $ScheduledPath , $InteractivePath 
-
-    Set-FSRMSetting -SmtpServer $smtp_server -AdminEmailAddress $admin_email -FromEmailAddress $from_email 
-    Set-FSRMSetting -ReportLocationIncident $IncidentPath -ReportLocationScheduled $ScheduledPath -ReportLocationOnDemand $InteractivePath
-    Set-FSRMSetting -EmailNotificationLimit 10 -EventNotificationLimit 1 
+    if ($OS -eq "2012") {
+        Set-FSRMSetting -SmtpServer $smtp_server -AdminEmailAddress $admin_email -FromEmailAddress $from_email 
+        Set-FSRMSetting -ReportLocationIncident $IncidentPath -ReportLocationScheduled $ScheduledPath -ReportLocationOnDemand $InteractivePath
+        Set-FSRMSetting -EmailNotificationLimit 10 -EventNotificationLimit 1
+    } else {
+        filescrn.exe admin options /smtp:$smtp_server /from:$from_email /adminemails:$admin_email
+    }
+     
 } else {
     $ScriptPath = "$FSRM_Log_Path\Scripts"
     $LogPath = "$FSRM_Log_Path\Logs"
@@ -100,39 +112,43 @@ if ($Check_FSRM -ne "Installed") {
 
 #Create honeypot FSRM Group
 Write-Output "Creating FSRM File Groups"
-New-FSRMFileGroup -Name "Honeypot Files" -IncludePattern "*.*"
+if ($OS -eq "2012") {
+    New-FSRMFileGroup -Name "Honeypot Files" -IncludePattern "*.*"
 
-#Create initial FSRM Cryptolocker Detection Group
-Write-Output "Downloading latest Ransomware extension list from Experiant.ca"
-$FilePatterns = ((Invoke-WebRequest -Uri "https://fsrm.experiant.ca/api/v1/combined").content | ConvertFrom-Json | ForEach-Object {$_.filters}) 
-New-FSRMFileGroup -Name "Ransomware File Groups" -IncludePattern $FilePatterns
-$FilePatterns | Out-File -FilePath $LogPath\Ransomware_File_Groups__$date.txt
-#Create FSRM Notification Actions
-$DetectionSubject = "Possible Ransomware Infection Detected! "
-$DetectionMessage = "User [Source Io Owner] attempted to save [Source File Path] to [File Screen Path] on server [Server].
-This file is in the [Violated File Group], and may possibly indicate a Ransomware infection. Please turn off your computer immediately,
-and wait to be contacted by Engineering."
-$HoneypotSubject = "Honeypot file touched by [Source Io Owner]"
-$HoneypotMessage = "User [Source Io Owner] attempted to modify [Source File Path] to [File Screen Path] on server [Server].
-This file is in the [Violated File Group] group, and may possibly indicate a Ransomware infection. Your account has been blocked from accessing the server.
-Please turn off your computer immediately, and wait to be contacted by Engineering."
+    #Create initial FSRM Cryptolocker Detection Group
+    Write-Output "Downloading latest Ransomware extension list from Experiant.ca"
+    $FilePatterns = ((Invoke-WebRequest -Uri "https://fsrm.experiant.ca/api/v1/combined").content | ConvertFrom-Json | ForEach-Object {$_.filters}) 
+    New-FSRMFileGroup -Name "Ransomware File Groups" -IncludePattern $FilePatterns
+    $FilePatterns | Out-File -FilePath $LogPath\Ransomware_File_Groups__$date.txt
+    #Create FSRM Notification Actions
+    $DetectionSubject = "Possible Ransomware Infection Detected! "
+    $DetectionMessage = "User [Source Io Owner] attempted to save [Source File Path] to [File Screen Path] on server [Server].
+    This file is in the [Violated File Group], and may possibly indicate a Ransomware infection. Please turn off your computer immediately,
+    and wait to be contacted by Engineering."
+    $HoneypotSubject = "Honeypot file touched by [Source Io Owner]"
+    $HoneypotMessage = "User [Source Io Owner] attempted to modify [Source File Path] to [File Screen Path] on server [Server].
+    This file is in the [Violated File Group] group, and may possibly indicate a Ransomware infection. Your account has been blocked from accessing the server.
+    Please turn off your computer immediately, and wait to be contacted by Engineering."
 
-$Detection_Email_Notification = New-FSRMAction Email -MailTo "[Admin Email];[Source File Owner Email]" -Subject $DetectionSubject -Body $DetectionMessage -RunLimitInterval 10
-$Honeypot_Email_Notification = New-FSRMAction Email -MailTo "[Admin Email];[Source File Owner Email]" -Subject $HoneypotSubject -Body $HoneypotMessage -RunLimitInterval 10
+    $Detection_Email_Notification = New-FSRMAction Email -MailTo "[Admin Email];[Source File Owner Email]" -Subject $DetectionSubject -Body $DetectionMessage -RunLimitInterval 10
+    $Honeypot_Email_Notification = New-FSRMAction Email -MailTo "[Admin Email];[Source File Owner Email]" -Subject $HoneypotSubject -Body $HoneypotMessage -RunLimitInterval 10
 
-$Detection_Event_Notification = New-FSRMAction Event -EventType Warning -Body $DetectionMessage -RunLimitInterval 1
-$Honeypot_Event_Notification = New-FSRMAction Event -EventType Warning -Body $HoneypotMessage -RunLimitInterval 1
+    $Detection_Event_Notification = New-FSRMAction Event -EventType Warning -Body $DetectionMessage -RunLimitInterval 1
+    $Honeypot_Event_Notification = New-FSRMAction Event -EventType Warning -Body $HoneypotMessage -RunLimitInterval 1
 
-New-FSRMFileScreenTemplate "Ransomware Detector" -IncludeGroup "Ransomware File Groups" -Notification $Detection_Email_Notification,$Detection_Event_Notification -Active:$false
-New-FSRMFileScreenTemplate "Honeypot Detector" -IncludeGroup "Honeypot Files" -Notification $Honeypot_Email_Notification,$Honeypot_Event_Notification -Active:$false
+    New-FSRMFileScreenTemplate "Ransomware Detector" -IncludeGroup "Ransomware File Groups" -Notification $Detection_Email_Notification,$Detection_Event_Notification -Active:$false
+    New-FSRMFileScreenTemplate "Honeypot Detector" -IncludeGroup "Honeypot Files" -Notification $Honeypot_Email_Notification,$Honeypot_Event_Notification -Active:$false
 
-Write-Output "Creating FSRM File Screens"
-foreach ($honeypot in $honeypots) {
-    New-FSRMFileScreen -Path $honeypot -Template "Honeypot Detector" | Out-Null
-}
-$LocalDrives = (Get-Volume | Where-Object {$_.DriveType -eq 'Fixed' -and $_.DriveLetter -match "[A-Z]"}).DriveLetter
-foreach ($drive in $LocalDrives) {
-    New-FSRMFileScreen -Path "$drive`:\" -Template "Ransomware Detector" 
+    Write-Output "Creating FSRM File Screens"
+    foreach ($honeypot in $honeypots) {
+        New-FSRMFileScreen -Path $honeypot -Template "Honeypot Detector" | Out-Null
+    }
+    $LocalDrives = (Get-Volume | Where-Object {$_.DriveType -eq 'Fixed' -and $_.DriveLetter -match "[A-Z]"}).DriveLetter
+    foreach ($drive in $LocalDrives) {
+        New-FSRMFileScreen -Path "$drive`:\" -Template "Ransomware Detector" 
+    }
+} else {
+    
 }
 
 #Create Ransomware File Group Updater Script
