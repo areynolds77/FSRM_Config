@@ -4,42 +4,41 @@ $minorVer = [System.Environment]::OSVersion.Version.Minor
 $date = Get-Date -Format dd-MM-yyyy
 
 $cred = Get-Credential -Message "Enter the credentials that should be used to update Ransomware File Groups weekly."
-$smtp_server = Read-Host "Enter the address of the smtp server you wish to use"
+$domain = Read-Host "Enter your domain name"
+$smtp_server = Read-Host "Enter the address of the smtp server you wish to use to send alert messages"
 $admin_email = Read-Host "Enter the e-mail address you wish to receive notications at"
 $from_email = Read-Host "Enter the e-mail address that messages should appear to originate from"
-$domain = Read-Host "Enter your domain name"
+
 
 $FSRM_Log_Path = Read-Host "Enter the path you wish to store FSRM logs, reports, and scripts in (This will not overwrite your current settings if you allready have FSRM installed!)"
 
 Write-Output "Checking if FSRM is installed...`r`n"
 #Check if FSRM is allready installed
-$Check_FSRM = (Get-WindowsFeature -Name FS-Resource-Manager).InstallState
-if ($Check_FSRM -ne "Installed") {
-    if ($majorVer -ge 6) {
-            if ($minorVer -ge 2) {
+if ($majorVer -ge 6) {
+        if ($minorVer -ge 2) {
+            $Check_FSRM = (Get-WindowsFeature -Name FS-Resource-Manager).InstallState
+            if ($Check_FSRM -ne "Installed") {
                 #Server 2012
                 Write-Output "FSRM not found...Installing (2012)"
                 Install-WindowsFeature -Name FS-Resource-Manager -IncludeManagementTools
                 #Remove Default File Screens
                 Get-FSRMFileScreen | ForEach-Object {Remove-FSRMFileScreen -path $_.Path -confirm:$false}
                 $OS = "2012" 
-            } elseif ($minorVer -ge 1) {
+            }
+        } elseif ($minorVer -ge 1) {
+            $Check_FSRM = (Get-WindowsFeature -Name FS-Resource-Manager).Installed
+            if ($Check_FSRM -eq "False") {
                 #Server 2008R2
                 Write-Output "FSRM not found...Installing (2008R2)"
                 Add-WindowsFeature FS-FileServer, FS-Resource-Manager
                 $OS = "2008R2"
-            } else {
-                Write-Output "FSRM not found...Installing (2008)"
-                &servermgrcmd -Install FS-FileServer FS-Resource-Manager
-                $OS = "2008"
             }
-        } else {
-            Write-Output "Unsupported Windows version detected. Quitting..."
-            return
+    } else {
+        Write-Output "Unsupported Windows version detected. Quitting..."
+        return
     }
-} else {
-    Write-Output "FSRM allready installed...continuing..."
 }
+
 
 #Create honeypot folders & files
 if ($OS -eq "2012") {
@@ -147,9 +146,8 @@ if ($OS -eq "2012") {
     foreach ($drive in $LocalDrives) {
         New-FSRMFileScreen -Path "$drive`:\" -Template "Ransomware Detector" 
     }
-} else {
+} 
     
-}
 
 #Create Ransomware File Group Updater Script
 $Update_Script = @"
