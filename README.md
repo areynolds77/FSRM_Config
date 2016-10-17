@@ -14,6 +14,7 @@ If you already have FSRM installed, this will simply add the neccessary file gro
     --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts.
 3. Follow the prompts.
 4. Test!
+
 ###For Server 2008R2
 1. [Download '2008_FSRM_Config.ps1'](https://github.com/areynolds77/FSRM_Config/blob/master/2008_FSRM_Config.ps1)
 2. Run '2008_FSRM_Config.ps1' as an administrator.
