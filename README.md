@@ -3,28 +3,28 @@
 This script (FSRM_Config.ps1) will install File Server Resource Manager (FSRM) and configure it to watch for ransomware infections. After installation you can also configure your file server to block infected users from accessing the server. 
 If you already have FSRM installed, this will simply add the neccessary file groups/screens, as well as a weekly task to update the ransomware extension list. 
 
-##System Requirements
+## System Requirements
 * Windows Server 2008R2 or later
 * Powershell 3.0 
 
-##Installation Instructions
-###For Server 2012 and up
+## Installation Instructions
+### For Server 2012 and up
 1. [Download 'FSRM_Config.ps1'](https://github.com/areynolds77/FSRM_Config/blob/master/FSRM_Config.ps1)  
 2. Run 'FSRM_Config.ps1' as an administrator.
     --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts.
 3. Follow the prompts.
 4. Test!
 
-###For Server 2008R2
+### For Server 2008R2
 1. [Download '2008_FSRM_Config.ps1'](https://github.com/areynolds77/FSRM_Config/blob/master/2008_FSRM_Config.ps1)
 2. Run '2008_FSRM_Config.ps1' as an administrator.
     --Remember that you may need to adjust your execution policy to allow the running of unsigned scripts.
 3. Follow the prompts.
 4. Test!
 
-##How it works 
+## How it works 
 FSRM provides two different avenues to protecting against ransomware infections: bait, and detection. 
-###Bait (2012 Version)
+### Bait (2012 Version)
 Most ransomware infections will attempt to encrypt any file they have access to, regardless of whether that file is stored locally, or on a network share (even hidden shares are vulnerable).
 This script will retreive a list of all the folders that are shared from the server, create a pair of hidden honeypot folders filled with fake files, and then configure FSRM to monitor these folders for any activity. 
 By keeping the folders hidden, users will not see them, but ransomware infections will--and as soon as they attempt to modify any of the files within a honeypot folder, FSRM will send an e-mail and log an event to the Windows Event log. 
@@ -45,10 +45,10 @@ A scheduled task watches for these events, and will then block SMB access for th
     ```
 
     *Where $ACCOUNTNAME is the SAM account name for the user you wish to restore access for.*
-###Bait (2008 Version)
+### Bait (2008 Version)
 Server 2008R2 is unable to block SMB access for specific users, so instead, anytime a Honeypot file is modified, FSRM will kill the LANMAN server--which will kill everyone's access to the file server.
 
-###Detection
+### Detection
 [Experiant](http://experiant.ca/) is a Canadian IT firm that maintains a publicly accessible list of known ransomware extensions. FSRM can be configured to watch for these extensions, and alert admins & users if a matching file is detected. 
 This script will check the Experiant list every Tuesday at 9AM for new patterns, and update the FSRM file groups if neccessary. It will also e-mail you a list of any new (or removed) patterns.
 You can read more about their efforts to combat ransomware [here](https://fsrm.experiant.ca/) 
@@ -57,11 +57,11 @@ You can read more about their efforts to combat ransomware [here](https://fsrm.e
 
         Because the Experiant list can be somewhat generous in the extensions it detects--I tend to get a lot of false positives from it. You can if you want to though!
 
-##To-Do
+## To-Do
 * Improve documentation
 * Add error handling & input validation
 
-##What it does
+## What it does
 * Collects initial setup information:
     * User Credentials are used to create a scheduled task that downloads a list of  the latest ransomware extensions, and then update the FSRM File group.
     * STMP information is used to configure e-mail alerting. Anytime a file with a possible ransomware extension is detected, FSRM will e-mail both an admin, and the user that created the file. 
@@ -93,7 +93,7 @@ You can read more about their efforts to combat ransomware [here](https://fsrm.e
     The script will then get a list of all SMB Shares on the local server, and block the offending user from accessing them. A notification message will be sent to the FSRM admin.
     * A Scheduled Task will then be created to executed the 'SMB Access Blocker' script anytime a message with an EventID of '8215' is logged.
 
-##Security Risks
+## Security Risks
 * The Powershell cmdlets for interfacing with Task Scheduler do not accept PSCredentials. This means that the provided password must be decrypted, and passed to Task Scheduler in plaintext. Make sure you close the Powershell console once the script has finished.
 
 
